@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppTorneos - Panel Administración</title>
+
+  <!-- Enlaces para PWA e Iconos -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <meta name="theme-color" content="#D32F2F">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-header" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <img src="logo.svg" alt="Logo" style="width: 38px; height: 38px;">
+        <h2>AppTorneos</h2>
+    </div>
+    <ul class="sidebar-menu">
+      <li id="menu-gimnastas" class="active" onclick="cambiarVista('gimnastas')">🤸‍♀️ Gimnastas</li>
+      <li id="menu-datos" onclick="cambiarVista('datos')">⚙️ Hoja Datos</li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+    <div class="header-info">
+      <div>
+        <div class="torneo-title" id="lbl-torneo">Cargando Torneo...</div>
+        <div style="font-size: 0.85rem; color: var(--texto-secundario);" id="lbl-club">--</div>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+        <div id="header-badges" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+        <!-- BOTONES FORMULARIO -->
+        <div class="header-actions">
+          <a id="btnFormulario" href="#" target="_blank" class="btn btn-yellow">Ir al formulario 🔗</a>
+          <button class="btn btn-outline" onclick="copiarUrlFormulario()">Copiar URL 📋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA GIMNASTAS -->
+    <section id="view-gimnastas" class="view-section active">
+      <div class="controls-panel">
+        <input type="text" id="searchInput" placeholder="Buscar por Nombre, Apellido o Documento..." onkeyup="filtrarTabla()" style="flex: 1; min-width: 220px;">
+        <select id="filterCategoria" onchange="filtrarTabla()">
+          <option value="">Todas las Categorías</option>
+        </select>
+        <select id="filterPago" onchange="filtrarTabla()">
+          <option value="">Todos los Estados de Pago</option>
+        </select>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Nombre Completo</th>
+              <th>Categoría</th>
+              <th>Asistencia</th>
+              <th>Consentimiento</th>
+              <th>Estado Pago</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-gimnastas">
+            <tr><td colspan="7" style="text-align: center; color: var(--texto-secundario);">Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VISTA HOJA DATOS -->
+    <section id="view-datos" class="view-section">
+      <div class="form-card">
+        <h2 style="color: var(--amarillo); margin-bottom: 20px;">Editar Información General (Hoja Datos)</h2>
+        <form id="formDatosTorneo" onsubmit="guardarDatosTorneo(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Título Torneo</label>
+              <input type="text" id="edit_titulo_torneo" required>
+            </div>
+            <div class="form-group">
+              <label>Club</label>
+              <input type="text" id="edit_club">
+            </div>
+            <div class="form-group">
+              <label>Fecha Evento</label>
+              <input type="date" id="edit_fecha_evento">
+            </div>
+            <div class="form-group">
+              <label>Fecha Límite</label>
+              <input type="date" id="edit_fechalimite">
+            </div>
+            <div class="form-group">
+              <label>Monto</label>
+              <input type="number" step="0.01" id="edit_Monto">
+            </div>
+            <div class="form-group">
+              <label>URL Formulario</label>
+              <input type="url" id="edit_url_formulario" placeholder="https://...">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-red">Guardar Datos Torneo</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL EDITAR GIMNASTA -->
+  <div class="modal" id="gimnastaModal">
+    <div class="modal-content">
+      <h3 style="color: var(--amarillo); margin-bottom: 15px;">Editar Registro de Gimnasta</h3>
+      <form id="gimnastaForm" onsubmit="guardarEdicionGimnasta(event)">
+        <input type="hidden" id="rowIndex">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Documento <span class="readonly-tag">(Lectura)</span></label>
+            <input type="text" id="Documento" readonly>
+          </div>
+          <div class="form-group">
+            <label>Estado Pago <span class="readonly-tag">(Lectura)</span></label>
+            <input type="text" id="EstadoPago" readonly>
+          </div>
+          <div class="form-group">
+            <label>ID Pago <span class="readonly-tag">(Lectura)</span></label>
+            <input type="text" id="PagoID" readonly>
+          </div>
+          <div class="form-group">
+            <label>Fecha Registro <span class="readonly-tag">(Lectura)</span></label>
+            <input type="text" id="FechaRegistro" readonly>
+          </div>
+          <div class="form-group">
+            <label>Fecha Actualización <span class="readonly-tag">(Lectura)</span></label>
+            <input type="text" id="FechaActualizacion" readonly>
+          </div>
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="Nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" id="Apellido" required>
+          </div>
+          <div class="form-group">
+            <label>Fecha Nacimiento</label>
+            <input type="date" id="FechaNacimiento" required>
+          </div>
+          <div class="form-group">
+            <label>Categoría</label>
+            <input type="text" id="Categoria" required>
+          </div>
+          <div class="form-group">
+            <label>Puede Asistir</label>
+            <select id="PuedeAsistir">
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Consentimiento</label>
+            <select id="Consentimiento">
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+        <div style="text-align: right; margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn" onclick="cerrarModal()" style="background:#333; color:#FFF;">Cancelar</button>
+          <button type="submit" class="btn btn-red">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+
+  <!-- Botón emergente para instalar en teléfono -->
+  <button id="btnInstalar" class="btn btn-yellow" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+    📱 Instalar App
+  </button>
+
+  <script src="app.js"></script>
+  <script>
+    // Registro de Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    // Captura del evento de instalación en celulares/navegadores
+    let deferredPrompt;
+    const btnInstalar = document.getElementById('btnInstalar');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstalar.style.display = 'flex';
+    });
+
+    btnInstalar.addEventListener('click', () => {
+      btnInstalar.style.display = 'none';
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+        });
+      }
+    });
+  </script>
+</body>
+
+</body>
+</html>

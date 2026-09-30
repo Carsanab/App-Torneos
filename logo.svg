@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181C" />
+      <stop offset="100%" stop-color="#0F0F12" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F44336" />
+      <stop offset="100%" stop-color="#D32F2F" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo Cuadrado con bordes redondeados para icono de App -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="95" fill="none" stroke="#2A2A32" stroke-width="8" />
+
+  <!-- Detalle decorativo dorado inferior -->
+  <path d="M 96 416 Q 256 460 416 416" fill="none" stroke="#FFD700" stroke-width="12" stroke-linecap="round" />
+
+  <!-- Cinta/Gimnasta estilizada -->
+  <g fill="none" stroke="url(#redGrad)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 120 320 C 180 380, 240 220, 310 280 C 370 330, 390 180, 310 140 C 230 100, 190 220, 280 200" stroke-width="26" />
+  </g>
+
+  <!-- Estrella dorada arriba a la derecha -->
+  <path d="M 370 120 L 376 138 L 395 138 L 380 149 L 386 167 L 370 156 L 354 167 L 360 149 L 345 138 L 364 138 Z" fill="#FFD700" />
+</svg>
