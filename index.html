@@ -5,23 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AppTorneos - Panel Administración</title>
 
-  <!-- Enlaces para PWA e Iconos -->
+  <!-- PWA e Iconos -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <meta name="theme-color" content="#D32F2F">
+  <meta name="theme-color" content="#d7352e">
 
-  <link rel="stylesheet" href="styles.css">
-  <!-- Agrega ?v=2 al final de styles.css y app.js -->
   <link rel="stylesheet" href="styles.css?v=2">
-
-<script src="app.js?v=2"></script>
 </head>
 <body>
 
   <aside class="sidebar">
-    <div class="sidebar-header" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <img src="logo.svg" alt="Logo" style="width: 38px; height: 38px;">
-        <h2>AppTorneos</h2>
+    <div class="sidebar-header">
+      <img src="logo.svg" alt="Logo" style="width: 38px; height: 38px;">
+      <h2>AppTorneos</h2>
     </div>
     <ul class="sidebar-menu">
       <li id="menu-gimnastas" class="active" onclick="cambiarVista('gimnastas')">🤸‍♀️ Gimnastas</li>
@@ -38,10 +34,10 @@
       
       <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
         <div id="header-badges" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
-        <!-- BOTONES FORMULARIO -->
+        <!-- BOTONES DE ACCIÓN -->
         <div class="header-actions">
-            <a id="btnFormulario" href="https://carsanab.github.io/Formulario-Torneos/" target="_blank" class="btn btn-gold">Ir al formulario 🔗</a>
-            <button class="btn btn-outline" onclick="copiarUrlFormulario()">Copiar URL 📋</button>
+          <a id="btnFormulario" href="https://carsanab.github.io/Formulario-Torneos/" target="_blank" class="btn btn-gold">formulario 🔗</a>
+          <button class="btn btn-outline" onclick="copiarUrlFormulario()">Copiar URL 📋</button>
         </div>
       </div>
     </div>
@@ -72,7 +68,11 @@
             </tr>
           </thead>
           <tbody id="tabla-gimnastas">
-            <tr><td colspan="7" style="text-align: center; color: var(--texto-secundario);">Cargando registros...</td></tr>
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--texto-secundario); padding: 30px;">
+                ⏳ Cargas datos de registros...
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -81,7 +81,7 @@
     <!-- VISTA HOJA DATOS -->
     <section id="view-datos" class="view-section">
       <div class="form-card">
-        <h2 style="color: var(--amarillo); margin-bottom: 20px;">Editar Información General (Hoja Datos)</h2>
+        <h2 style="color: var(--dorado-principal); margin-bottom: 20px;">Editar Información General (Hoja Datos)</h2>
         <form id="formDatosTorneo" onsubmit="guardarDatosTorneo(event)">
           <div class="form-grid">
             <div class="form-group">
@@ -118,7 +118,7 @@
   <!-- MODAL EDITAR GIMNASTA -->
   <div class="modal" id="gimnastaModal">
     <div class="modal-content">
-      <h3 style="color: var(--amarillo); margin-bottom: 15px;">Editar Registro de Gimnasta</h3>
+      <h3 style="color: var(--dorado-principal); margin-bottom: 15px;">Editar Registro de Gimnasta</h3>
       <form id="gimnastaForm" onsubmit="guardarEdicionGimnasta(event)">
         <input type="hidden" id="rowIndex">
         <div class="form-grid">
@@ -181,21 +181,17 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
-
   <!-- Botón emergente para instalar en teléfono -->
-  <button id="btnInstalar" class="btn btn-yellow" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+  <button id="btnInstalar" class="btn btn-gold" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
     📱 Instalar App
   </button>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
   <script>
-    // Registro de Service Worker para PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
-    // Captura del evento de instalación en celulares/navegadores
     let deferredPrompt;
     const btnInstalar = document.getElementById('btnInstalar');
 
@@ -215,7 +211,5 @@
       }
     });
   </script>
-</body>
-
 </body>
 </html>

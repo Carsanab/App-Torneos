@@ -1,17 +1,23 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwVgqv7Ob9YQcSun5o_8Dpx8sK34BRAzNYv3U0bDGWv_UiHy6oIJwfvavIK3RCjcPle/exec";
 
-// URL por defecto definida aquí
+// URL por defecto para el botón del formulario
 let urlFormularioActual = "https://carsanab.github.io/Formulario-Torneos/";
 let gimnastasData = [];
 let datosTorneoData = {};
 
 window.onload = function() {
-  // Asignar URL por defecto al cargar
   const btnForm = document.getElementById('btnFormulario');
   if(btnForm) btnForm.href = urlFormularioActual;
 
-  cargarDatosTorneo();
-  cargarGimnastas();
+  // 1. Carga inmediata desde la memoria local del teléfono para respuesta instantánea
+  const cachedTorneo = localStorage.getItem('cache_torneo');
+  const cachedGimnastas = localStorage.getItem('cache_gimnastas');
+
+  if (cachedTorneo) procesarDatosTorneo(JSON.parse(cachedTorneo));
+  if (cachedGimnastas) procesarGimnastas(JSON.parse(cachedGimnastas));
+
+  // 2. Traer la última versión actualizada de Google Sheets en 1 sola llamada HTTP
+  cargarTodo();
 };
 
 function cambiarVista(vista) {
@@ -22,35 +28,53 @@ function cambiarVista(vista) {
   document.getElementById('menu-' + vista).classList.add('active');
 }
 
-function cargarDatosTorneo() {
-  fetch(`${API_URL}?action=getDatos`)
+function cargarTodo() {
+  fetch(`${API_URL}?action=getTodo`)
     .then(res => res.json())
-    .then(datos => {
-      datosTorneoData = datos;
-      document.getElementById('lbl-torneo').innerText = datos.titulo_torneo || 'Torneo Sin Título';
-      document.getElementById('lbl-club').innerText = datos.club ? 'Club: ' + datos.club : '';
-
-      let badgesHtml = '';
-      if(datos.fecha_evento) badgesHtml += `<span class="torneo-badge">Fecha: ${datos.fecha_evento}</span>`;
-      if(datos.Monto) badgesHtml += `<span class="torneo-badge">Monto: $${datos.Monto}</span>`;
-      document.getElementById('header-badges').innerHTML = badgesHtml;
-
-      // Si viene una URL desde Google Sheets, la actualiza; de lo contrario usa la asignada por defecto
-      if (datos.url_formulario && datos.url_formulario.trim() !== "") {
-        urlFormularioActual = datos.url_formulario;
+    .then(data => {
+      if (data.torneo) {
+        localStorage.setItem('cache_torneo', JSON.stringify(data.torneo));
+        procesarDatosTorneo(data.torneo);
       }
-      
-      const btnForm = document.getElementById('btnFormulario');
-      btnForm.href = urlFormularioActual;
-
-      document.getElementById('edit_titulo_torneo').value = datos.titulo_torneo || '';
-      document.getElementById('edit_club').value = datos.club || '';
-      document.getElementById('edit_fecha_evento').value = datos.fecha_evento || '';
-      document.getElementById('edit_fechalimite').value = datos.fechalimite || '';
-      document.getElementById('edit_Monto').value = datos.Monto || '';
-      document.getElementById('edit_url_formulario').value = urlFormularioActual;
+      if (data.gimnastas) {
+        localStorage.setItem('cache_gimnastas', JSON.stringify(data.gimnastas));
+        procesarGimnastas(data.gimnastas);
+      }
     })
-    .catch(err => console.error("Error al cargar datos:", err));
+    .catch(err => console.error("Error al cargar datos unificados:", err));
+}
+
+function procesarDatosTorneo(datos) {
+  datosTorneoData = datos;
+  document.getElementById('lbl-torneo').innerText = datos.titulo_torneo || 'Torneo Sin Título';
+  document.getElementById('lbl-club').innerText = datos.club ? 'Club: ' + datos.club : '';
+
+  let badgesHtml = '';
+  if(datos.fecha_evento) badgesHtml += `<span class="torneo-badge">Fecha: ${datos.fecha_evento}</span>`;
+  if(datos.Monto) badgesHtml += `<span class="torneo-badge">Monto: $${datos.Monto}</span>`;
+  document.getElementById('header-badges').innerHTML = badgesHtml;
+
+  if (datos.url_formulario && datos.url_formulario.trim() !== "") {
+    urlFormularioActual = datos.url_formulario;
+  }
+  
+  const btnForm = document.getElementById('btnFormulario');
+  if(btnForm) btnForm.href = urlFormularioActual;
+
+  if(document.getElementById('edit_titulo_torneo')) {
+    document.getElementById('edit_titulo_torneo').value = datos.titulo_torneo || '';
+    document.getElementById('edit_club').value = datos.club || '';
+    document.getElementById('edit_fecha_evento').value = datos.fecha_evento || '';
+    document.getElementById('edit_fechalimite').value = datos.fechalimite || '';
+    document.getElementById('edit_Monto').value = datos.Monto || '';
+    document.getElementById('edit_url_formulario').value = urlFormularioActual;
+  }
+}
+
+function procesarGimnastas(data) {
+  gimnastasData = data;
+  poblarFiltros();
+  renderTabla(gimnastasData);
 }
 
 function copiarUrlFormulario() {
@@ -63,17 +87,6 @@ function copiarUrlFormulario() {
   }).catch(err => {
     alert("Error al copiar URL");
   });
-}
-
-function cargarGimnastas() {
-  fetch(`${API_URL}?action=getGimnastas`)
-    .then(res => res.json())
-    .then(data => {
-      gimnastasData = data;
-      poblarFiltros();
-      renderTabla(gimnastasData);
-    })
-    .catch(err => console.error("Error al cargar gimnastas:", err));
 }
 
 function renderTabla(lista) {
@@ -183,7 +196,7 @@ function guardarEdicionGimnasta(e) {
     .then(res => res.json())
     .then(() => {
       cerrarModal();
-      cargarGimnastas();
+      cargarTodo();
     });
 }
 
@@ -205,7 +218,7 @@ function guardarDatosTorneo(e) {
     .then(res => res.json())
     .then(() => {
       alert("Información actualizada correctamente.");
-      cargarDatosTorneo();
+      cargarTodo();
     });
 }
 
@@ -215,7 +228,7 @@ function eliminarGimnasta(rowIndex) {
     fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
       .then(res => res.json())
       .then(() => {
-        cargarGimnastas();
+        cargarTodo();
       });
   }
 }
