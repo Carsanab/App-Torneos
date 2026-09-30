@@ -2,10 +2,10 @@
   --bg-principal: #0F0F12;
   --bg-card: #18181C;
   --bg-sidebar: #131316;
-  --rojo-principal: #D32F2F;
-  --rojo-hover: #F44336;
-  --amarillo: #FFD700;
-  --amarillo-hover: #FFEA00;
+  --rojo-principal: #d7352e;
+  --rojo-hover: #e5453e;
+  --dorado-principal: #d0b27b;
+  --dorado-hover: #e0c38c;
   --texto-blanco: #FFFFFF;
   --texto-secundario: #A0A0AA;
   --borde-color: #2A2A32;
@@ -25,12 +25,16 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
 
 .sidebar-header {
   padding: 20px;
-  background: linear-gradient(135deg, var(--rojo-principal), #500000);
+  background: linear-gradient(135deg, var(--rojo-principal), #4a100d);
   text-align: center;
-  border-bottom: 3px solid var(--amarillo);
+  border-bottom: 3px solid var(--dorado-principal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
-.sidebar-header h2 { color: var(--amarillo); font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; }
+.sidebar-header h2 { color: var(--dorado-principal); font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; }
 
 .sidebar-menu { list-style: none; padding: 20px 0; }
 .sidebar-menu li {
@@ -46,7 +50,7 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
 
 .sidebar-menu li:hover, .sidebar-menu li.active {
   background-color: #221515;
-  color: var(--amarillo);
+  color: var(--dorado-principal);
   border-left: 4px solid var(--rojo-principal);
 }
 
@@ -62,18 +66,27 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   border: 1px solid var(--borde-color);
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  flex-direction: row;
+  gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-.torneo-title { color: var(--amarillo); font-size: 1.3rem; font-weight: bold; }
-.torneo-badge { background-color: rgba(255, 215, 0, 0.1); border: 1px solid var(--amarillo); color: var(--amarillo); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; }
+.torneo-title { color: var(--dorado-principal); font-size: 1.3rem; font-weight: bold; }
+.torneo-badge { 
+  background-color: rgba(208, 178, 123, 0.1); 
+  border: 1px solid var(--dorado-principal); 
+  color: var(--dorado-principal); 
+  padding: 5px 12px; 
+  border-radius: 20px; 
+  font-size: 0.85rem; 
+}
 
 .view-section { display: none; }
 .view-section.active { display: block; }
@@ -99,7 +112,7 @@ input, select {
   font-size: 0.9rem;
 }
 
-input:focus, select:focus { border-color: var(--amarillo); }
+input:focus, select:focus { border-color: var(--dorado-principal); }
 
 input[readonly], select[disabled] {
   background-color: #121215;
@@ -109,7 +122,7 @@ input[readonly], select[disabled] {
 }
 
 .btn {
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -119,23 +132,24 @@ input[readonly], select[disabled] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .btn:hover { opacity: 0.9; }
 .btn-red { background-color: var(--rojo-principal); color: var(--texto-blanco); }
-.btn-yellow { background-color: var(--amarillo); color: #000; }
-.btn-danger { background-color: #B71C1C; color: #FFF; }
-.btn-outline { background-color: transparent; border: 1px solid var(--amarillo); color: var(--amarillo); }
+.btn-gold { background-color: var(--dorado-principal); color: #000; }
+.btn-danger { background-color: #8b0000; color: #FFF; }
+.btn-outline { background-color: transparent; border: 1px solid var(--dorado-principal); color: var(--dorado-principal); }
 
 .table-container { overflow-x: auto; background-color: var(--bg-card); border-radius: 8px; border: 1px solid var(--borde-color); }
 table { width: 100%; border-collapse: collapse; text-align: left; }
-th { background-color: #121216; color: var(--amarillo); padding: 14px; font-size: 0.9rem; border-bottom: 2px solid var(--borde-color); }
+th { background-color: #121216; color: var(--dorado-principal); padding: 14px; font-size: 0.9rem; border-bottom: 2px solid var(--borde-color); }
 td { padding: 12px 14px; border-bottom: 1px solid var(--borde-color); font-size: 0.9rem; }
 tr:hover { background-color: #202026; }
 
+/* ESTADOS DE PAGO */
 .status-badge {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 12px;
   font-weight: bold;
   font-size: 0.8rem;
@@ -147,9 +161,16 @@ tr:hover { background-color: #202026; }
   border: 1px solid #2E7D32;
 }
 .status-pendiente {
-  background-color: rgba(211, 47, 47, 0.2);
-  color: #FF5252;
-  border: 1px solid #D32F2F;
+  background-color: rgba(215, 53, 46, 0.2);
+  color: var(--rojo-principal);
+  border: 1px solid var(--rojo-principal);
+}
+
+.acciones-cell {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
 }
 
 .form-card {
@@ -163,7 +184,7 @@ tr:hover { background-color: #202026; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 0.85rem; color: var(--amarillo); font-weight: 600; }
+.form-group label { font-size: 0.85rem; color: var(--dorado-principal); font-weight: 600; }
 .readonly-tag { font-size: 0.75rem; color: #777; font-style: italic; }
 
 .modal {
@@ -172,13 +193,16 @@ tr:hover { background-color: #202026; }
 }
 .modal-content {
   background-color: var(--bg-card); border-radius: 8px; width: 90%; max-width: 650px;
-  padding: 25px; border: 1px solid var(--borde-color); border-top: 5px solid var(--amarillo); max-height: 90vh; overflow-y: auto;
+  padding: 25px; border: 1px solid var(--borde-color); border-top: 5px solid var(--dorado-principal); max-height: 90vh; overflow-y: auto;
 }
 
+/* RESPONSIVE MÓVIL */
 @media (max-width: 768px) {
   body { flex-direction: column; }
   .sidebar { width: 100%; }
   .sidebar-menu { display: flex; overflow-x: auto; padding: 0; }
   .sidebar-menu li { flex: 1; text-align: center; justify-content: center; }
-  .header-info { flex-direction: column; align-items: flex-start; }
+  .header-info { flex-direction: column; align-items: stretch; gap: 15px; }
+  .header-actions { width: 100%; justify-content: space-between; }
+  .header-actions .btn { flex: 1; }
 }

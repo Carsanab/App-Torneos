@@ -1,11 +1,15 @@
-// Reemplaza esta URL con la URL de tu implementación de Apps Script (Web App)
 const API_URL = "https://script.google.com/macros/s/AKfycbwVgqv7Ob9YQcSun5o_8Dpx8sK34BRAzNYv3U0bDGWv_UiHy6oIJwfvavIK3RCjcPle/exec";
 
+// URL por defecto definida aquí
+let urlFormularioActual = "https://carsanab.github.io/Formulario-Torneos/";
 let gimnastasData = [];
 let datosTorneoData = {};
-let urlFormularioActual = "#";
 
 window.onload = function() {
+  // Asignar URL por defecto al cargar
+  const btnForm = document.getElementById('btnFormulario');
+  if(btnForm) btnForm.href = urlFormularioActual;
+
   cargarDatosTorneo();
   cargarGimnastas();
 };
@@ -31,8 +35,11 @@ function cargarDatosTorneo() {
       if(datos.Monto) badgesHtml += `<span class="torneo-badge">Monto: $${datos.Monto}</span>`;
       document.getElementById('header-badges').innerHTML = badgesHtml;
 
-      // Configurar enlace del formulario
-      urlFormularioActual = datos.url_formulario || "#";
+      // Si viene una URL desde Google Sheets, la actualiza; de lo contrario usa la asignada por defecto
+      if (datos.url_formulario && datos.url_formulario.trim() !== "") {
+        urlFormularioActual = datos.url_formulario;
+      }
+      
       const btnForm = document.getElementById('btnFormulario');
       btnForm.href = urlFormularioActual;
 
@@ -41,7 +48,7 @@ function cargarDatosTorneo() {
       document.getElementById('edit_fecha_evento').value = datos.fecha_evento || '';
       document.getElementById('edit_fechalimite').value = datos.fechalimite || '';
       document.getElementById('edit_Monto').value = datos.Monto || '';
-      document.getElementById('edit_url_formulario').value = datos.url_formulario || '';
+      document.getElementById('edit_url_formulario').value = urlFormularioActual;
     })
     .catch(err => console.error("Error al cargar datos:", err));
 }
@@ -52,7 +59,7 @@ function copiarUrlFormulario() {
     return;
   }
   navigator.clipboard.writeText(urlFormularioActual).then(() => {
-    alert("¡URL del formulario copiada al portapapeles!");
+    alert("¡URL copiada al portapapeles!");
   }).catch(err => {
     alert("Error al copiar URL");
   });
@@ -93,8 +100,10 @@ function renderTabla(lista) {
         <td>${g.Consentimiento || ''}</td>
         <td><span class="status-badge ${pagoBadgeClass}">${estadoPago || 'Pendiente'}</span></td>
         <td>
-          <button class="btn btn-yellow" style="padding: 4px 8px; font-size: 0.75rem;" onclick='abrirModalEditar(${JSON.stringify(g)})'>Editar</button>
-          <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="eliminarGimnasta(${g.rowIndex})">Borrar</button>
+          <div class="acciones-cell">
+            <button class="btn btn-gold" style="padding: 6px 10px; font-size: 0.8rem;" onclick='abrirModalEditar(${JSON.stringify(g)})'>Editar</button>
+            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 0.8rem;" onclick="eliminarGimnasta(${g.rowIndex})">Borrar</button>
+          </div>
         </td>
       </tr>
     `;
@@ -195,7 +204,7 @@ function guardarDatosTorneo(e) {
   fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
     .then(res => res.json())
     .then(() => {
-      alert("Información de la hoja Datos actualizada.");
+      alert("Información actualizada correctamente.");
       cargarDatosTorneo();
     });
 }
