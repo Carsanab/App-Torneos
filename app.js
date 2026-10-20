@@ -1,24 +1,92 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwVgqv7Ob9YQcSun5o_8Dpx8sK34BRAzNYv3U0bDGWv_UiHy6oIJwfvavIK3RCjcPle/exec";
-
-// URL por defecto para el botón del formulario
 let urlFormularioActual = "https://carsanab.github.io/Formulario-Torneos/";
-let gimnastasData = [];
-let datosTorneoData = {};
+
+let db = {
+  Gimnastas: [],
+  BaseGimnastas: [],
+  Categorias: [],
+  MontosPorNivel: [],
+  Datos: {}
+};
 
 window.onload = function() {
-  const btnForm = document.getElementById('btnFormulario');
-  if(btnForm) btnForm.href = urlFormularioActual;
+  document.querySelectorAll('.sidebar-menu li').forEach(li => {
+    li.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
 
-  // 1. Carga inmediata desde la memoria local del teléfono para respuesta instantánea
-  const cachedTorneo = localStorage.getItem('cache_torneo');
-  const cachedGimnastas = localStorage.getItem('cache_gimnastas');
-
-  if (cachedTorneo) procesarDatosTorneo(JSON.parse(cachedTorneo));
-  if (cachedGimnastas) procesarGimnastas(JSON.parse(cachedGimnastas));
-
-  // 2. Traer la última versión actualizada de Google Sheets en 1 sola llamada HTTP
-  cargarTodo();
+  const cachedDb = localStorage.getItem('cache_db');
+  if (cachedDb) {
+    db = JSON.parse(cachedDb);
+    renderAllViews();
+  }
+  cargarTodoServidor();
 };
+
+// Formato de fechas DD/MM/YYYY para las tablas
+function formatearFechaDDMMYYYY(fechaStr) {
+  if (!fechaStr) return '';
+  const limpia = fechaStr.split('T')[0];
+  const partes = limpia.split('-');
+  if (partes.length === 3) {
+    return `${partes[2].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[0]}`;
+  }
+  return fechaStr;
+}
+
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+}
+
+function cargarTodoServidor() {
+  fetch(`${API_URL}?action=getTodo`)
+    .then(res => res.json())
+    .then(data => {
+      db.Gimnastas = data.gimnastas || [];
+      db.Categorias = data.categorias || [];
+      db.Datos = data.datos || {};
+      db.BaseGimnastas = data.baseGimnastas || [];
+      db.MontosPorNivel = data.montosPorNivel || [];
+
+      localStorage.setItem('cache_db', JSON.stringify(db));
+      renderAllViews();
+    })
+    .catch(err => console.error("Error al cargar datos:", err));
+}
+
+function renderAllViews() {
+  document.getElementById('lbl-torneo').innerText = db.Datos.titulo_torneo || 'Torneo Sin Título';
+  document.getElementById('lbl-club').innerText = db.Datos.club ? 'Club: ' + db.Datos.club : '';
+
+  let badgesHtml = '';
+  if (db.Datos.fecha_evento) {
+    badgesHtml += `<span class="torneo-badge">Fecha: ${formatearFechaDDMMYYYY(db.Datos.fecha_evento)}</span>`;
+  }
+  document.getElementById('header-badges').innerHTML = badgesHtml;
+
+  if (db.Datos.url_formulario && db.Datos.url_formulario.trim() !== "") {
+    urlFormularioActual = db.Datos.url_formulario;
+  }
+  document.getElementById('btnFormulario').href = urlFormularioActual;
+
+  if (document.getElementById('edit_titulo_torneo')) {
+    document.getElementById('edit_titulo_torneo').value = db.Datos.titulo_torneo || '';
+    document.getElementById('edit_club').value = db.Datos.club || '';
+    document.getElementById('edit_titulo3').value = db.Datos.titulo3 || '';
+    document.getElementById('edit_titulo4').value = db.Datos.titulo4 || '';
+    document.getElementById('edit_fecha_evento').value = db.Datos.fecha_evento || '';
+    document.getElementById('edit_fechalimite').value = db.Datos.fechalimite || '';
+    document.getElementById('edit_url_formulario').value = urlFormularioActual;
+  }
+
+  renderTablaGimnastas(db.Gimnastas);
+  renderTablaBaseGimnastas(db.BaseGimnastas);
+  renderTablaCategorias(db.Categorias);
+  renderTablaMontos(db.MontosPorNivel);
+}
 
 function cambiarVista(vista) {
   document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -28,176 +96,235 @@ function cambiarVista(vista) {
   document.getElementById('menu-' + vista).classList.add('active');
 }
 
-function cargarTodo() {
-  fetch(`${API_URL}?action=getTodo`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.torneo) {
-        localStorage.setItem('cache_torneo', JSON.stringify(data.torneo));
-        procesarDatosTorneo(data.torneo);
-      }
-      if (data.gimnastas) {
-        localStorage.setItem('cache_gimnastas', JSON.stringify(data.gimnastas));
-        procesarGimnastas(data.gimnastas);
-      }
-    })
-    .catch(err => console.error("Error al cargar datos unificados:", err));
+/* RENDERIZADO DE TABLAS */
+function renderTablaGimnastas(lista) {
+  const tbody = document.getElementById('tbody-Gimnastas');
+  tbody.innerHTML = lista.map(g => {
+    const estado = (g.EstadoPago || 'PENDIENTE').toUpperCase();
+    const badgeClass = estado === 'PAGADO' ? 'status-pagado' : 'status-pendiente';
+    const fechaFormateada = formatearFechaDDMMYYYY(g.FechaNacimiento);
+
+    return `<tr>
+      <td style="text-align: center;">
+        <input type="checkbox" class="select-checkbox row-select-gimnasta" data-row="${g.rowIndex}">
+      </td>
+      <td><strong>${g.IDDocumento || g.Documento || ''}</strong></td>
+      <td>${g.Nombres || ''}</td>
+      <td>${fechaFormateada}</td>
+      <td>${g.Categoria || ''}</td>
+      <td>${g.Nivel || ''}</td>
+      <td>${g.PuedeAsistir || ''}</td>
+      <td><span class="status-badge ${badgeClass}">${estado}</span></td>
+      <td><div class="acciones-cell">
+        <button class="btn btn-gold" style="padding:4px 8px;font-size:0.8rem;" onclick='abrirModalEditar("Gimnastas", ${JSON.stringify(g)})'>Editar</button>
+        <button class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick='eliminarRegistro("Gimnastas", ${g.rowIndex})'>Borrar</button>
+      </div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;">Sin registros.</td></tr>';
 }
 
-function procesarDatosTorneo(datos) {
-  datosTorneoData = datos;
-  document.getElementById('lbl-torneo').innerText = datos.titulo_torneo || 'Torneo Sin Título';
-  document.getElementById('lbl-club').innerText = datos.club ? 'Club: ' + datos.club : '';
+function renderTablaBaseGimnastas(lista) {
+  const tbody = document.getElementById('tbody-BaseGimnastas');
+  tbody.innerHTML = lista.map(b => {
+    const fechaFormateada = formatearFechaDDMMYYYY(b.fecha_de_nacimiento);
+    return `<tr>
+      <td><strong>${b.documento || ''}</strong></td>
+      <td>${b.nombres || ''}</td>
+      <td>${fechaFormateada}</td>
+      <td>${b.categoria || ''}</td>
+      <td>${b.nivel || ''}</td>
+      <td><div class="acciones-cell">
+        <button class="btn btn-gold" style="padding:4px 8px;font-size:0.8rem;" onclick='abrirModalEditar("BaseGimnastas", ${JSON.stringify(b)})'>Editar</button>
+        <button class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick='eliminarRegistro("Base de Gimnastas", ${b.rowIndex})'>Borrar</button>
+      </div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;">Sin registros.</td></tr>';
+}
 
-  let badgesHtml = '';
-  if(datos.fecha_evento) badgesHtml += `<span class="torneo-badge">Fecha: ${datos.fecha_evento}</span>`;
-  if(datos.Monto) badgesHtml += `<span class="torneo-badge">Monto: $${datos.Monto}</span>`;
-  document.getElementById('header-badges').innerHTML = badgesHtml;
+function renderTablaCategorias(lista) {
+  const tbody = document.getElementById('tbody-Categorias');
+  tbody.innerHTML = lista.map(c => `<tr>
+    <td>${c.Edad || ''}</td>
+    <td><strong>${c['Categoría'] || c.Categoria || ''}</strong></td>
+    <td><div class="acciones-cell">
+      <button class="btn btn-gold" style="padding:4px 8px;font-size:0.8rem;" onclick='abrirModalEditar("Categorias", ${JSON.stringify(c)})'>Editar</button>
+      <button class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick='eliminarRegistro("Categorias", ${c.rowIndex})'>Borrar</button>
+    </div></td>
+  </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;">Sin registros.</td></tr>';
+}
 
-  if (datos.url_formulario && datos.url_formulario.trim() !== "") {
-    urlFormularioActual = datos.url_formulario;
+function renderTablaMontos(lista) {
+  const tbody = document.getElementById('tbody-MontosPorNivel');
+  tbody.innerHTML = lista.map(m => `<tr>
+    <td><strong>${m.nivel || ''}</strong></td>
+    <td>${m.categoria || ''}</td>
+    <td>$${m.monto || ''}</td>
+    <td><div class="acciones-cell">
+      <button class="btn btn-gold" style="padding:4px 8px;font-size:0.8rem;" onclick='abrirModalEditar("MontosPorNivel", ${JSON.stringify(m)})'>Editar</button>
+      <button class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick='eliminarRegistro("Montos por nivel", ${m.rowIndex})'>Borrar</button>
+    </div></td>
+  </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Sin registros.</td></tr>';
+}
+
+/* SELECCIÓN Y ELIMINACIÓN MASIVA */
+function toggleSelectAll(source) {
+  const checkboxes = document.querySelectorAll('.row-select-gimnasta');
+  checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+function borrarGimnastasSeleccionados() {
+  const seleccionados = Array.from(document.querySelectorAll('.row-select-gimnasta:checked'))
+                            .map(cb => cb.getAttribute('data-row'));
+
+  if (seleccionados.length === 0) {
+    alert("Por favor, selecciona al menos un gimnasta.");
+    return;
   }
+
+  if (confirm(`¿Estás seguro de eliminar los ${seleccionados.length} registros seleccionados?`)) {
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "eliminarVariasFilas", sheetName: "Gimnastas", rowIndices: seleccionados })
+    }).then(() => {
+      document.getElementById('selectAllGimnastas').checked = false;
+      cargarTodoServidor();
+    });
+  }
+}
+
+function borrarTodosGimnastas() {
+  if (db.Gimnastas.length === 0) {
+    alert("No hay registros para borrar.");
+    return;
+  }
+
+  const confirmacion = prompt("⚠️ ¡ADVERTENCIA! Se borrarán TODOS los gimnastas.\nEscribe BARRER para confirmar:");
   
-  const btnForm = document.getElementById('btnFormulario');
-  if(btnForm) btnForm.href = urlFormularioActual;
-
-  if(document.getElementById('edit_titulo_torneo')) {
-    document.getElementById('edit_titulo_torneo').value = datos.titulo_torneo || '';
-    document.getElementById('edit_club').value = datos.club || '';
-    document.getElementById('edit_fecha_evento').value = datos.fecha_evento || '';
-    document.getElementById('edit_fechalimite').value = datos.fechalimite || '';
-    document.getElementById('edit_Monto').value = datos.Monto || '';
-    document.getElementById('edit_url_formulario').value = urlFormularioActual;
+  if (confirmacion && confirmacion.trim().toUpperCase() === "BARRER") {
+    const todosLosIndices = db.Gimnastas.map(g => g.rowIndex);
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "eliminarVariasFilas", sheetName: "Gimnastas", rowIndices: todosLosIndices })
+    }).then(() => cargarTodoServidor());
   }
 }
 
-function procesarGimnastas(data) {
-  gimnastasData = data;
-  poblarFiltros();
-  renderTabla(gimnastasData);
+/* FILTRADO DINÁMICO (BÚSQUEDA + PAGO) */
+function filtrarTabla(tipo) {
+  if (tipo === 'Gimnastas') {
+    const txt = document.getElementById('searchGimnastas').value.toLowerCase();
+    const filtroPago = document.getElementById('filterPagoGimnastas').value.toUpperCase();
+
+    const filtrados = db.Gimnastas.filter(g => {
+      const coincideTexto = (g.Nombres && g.Nombres.toLowerCase().includes(txt)) || 
+                            (g.IDDocumento && g.IDDocumento.toString().includes(txt)) ||
+                            (g.Documento && g.Documento.toString().includes(txt));
+      
+      const estadoActual = (g.EstadoPago || 'PENDIENTE').toUpperCase();
+      const coincidePago = filtroPago === "" || estadoActual === filtroPago;
+
+      return coincideTexto && coincidePago;
+    });
+
+    renderTablaGimnastas(filtrados);
+  } else if (tipo === 'BaseGimnastas') {
+    const txt = document.getElementById('searchBaseGimnastas').value.toLowerCase();
+    const filtrados = db.BaseGimnastas.filter(b => 
+      (b.nombres && b.nombres.toLowerCase().includes(txt)) || 
+      (b.documento && b.documento.toString().includes(txt))
+    );
+    renderTablaBaseGimnastas(filtrados);
+  }
 }
 
-function copiarUrlFormulario() {
-  if (!urlFormularioActual || urlFormularioActual === "#") {
-    alert("No hay una URL configurada aún.");
-    return;
-  }
-  navigator.clipboard.writeText(urlFormularioActual).then(() => {
-    alert("¡URL copiada al portapapeles!");
-  }).catch(err => {
-    alert("Error al copiar URL");
-  });
+/* MODAL DINÁMICO */
+function abrirModalNuevo(tipo) {
+  document.getElementById('modalRowIndex').value = '';
+  document.getElementById('modalSheetName').value = obtenerNombreHoja(tipo);
+  document.getElementById('modalTitle').innerText = 'Nuevo Registro';
+  generarCamposFormulario(tipo, {});
+  document.getElementById('modalDinamico').style.display = 'flex';
 }
 
-function renderTabla(lista) {
-  const tbody = document.getElementById('tabla-gimnastas');
-  tbody.innerHTML = '';
+function abrirModalEditar(tipo, item) {
+  document.getElementById('modalRowIndex').value = item.rowIndex;
+  document.getElementById('modalSheetName').value = obtenerNombreHoja(tipo);
+  document.getElementById('modalTitle').innerText = 'Editar Registro';
+  generarCamposFormulario(tipo, item);
+  document.getElementById('modalDinamico').style.display = 'flex';
+}
 
-  if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--texto-secundario);">No se encontraron registros.</td></tr>';
-    return;
-  }
+function obtenerNombreHoja(tipo) {
+  const mapa = {
+    'Gimnastas': 'Gimnastas',
+    'BaseGimnastas': 'Base de Gimnastas',
+    'Categorias': 'Categorias',
+    'MontosPorNivel': 'Montos por nivel'
+  };
+  return mapa[tipo] || tipo;
+}
 
-  lista.forEach(g => {
-    const docVal = g.Documento || 'S/D';
-    const estadoPago = (g.EstadoPago || '').toString().trim();
-    const esPagado = estadoPago.toLowerCase() === 'pagado';
-    const pagoBadgeClass = esPagado ? 'status-pagado' : 'status-pendiente';
+function generarCamposFormulario(tipo, item) {
+  const container = document.getElementById('modalFormFields');
+  let fieldsHtml = '';
 
-    tbody.innerHTML += `
-      <tr>
-        <td><strong>${docVal}</strong></td>
-        <td>${g.Nombre || ''} ${g.Apellido || ''}</td>
-        <td>${g.Categoria || ''}</td>
-        <td>${g.PuedeAsistir || ''}</td>
-        <td>${g.Consentimiento || ''}</td>
-        <td><span class="status-badge ${pagoBadgeClass}">${estadoPago || 'Pendiente'}</span></td>
-        <td>
-          <div class="acciones-cell">
-            <button class="btn btn-gold" style="padding: 6px 10px; font-size: 0.8rem;" onclick='abrirModalEditar(${JSON.stringify(g)})'>Editar</button>
-            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 0.8rem;" onclick="eliminarGimnasta(${g.rowIndex})">Borrar</button>
-          </div>
-        </td>
-      </tr>
+  if (tipo === 'Gimnastas') {
+    fieldsHtml = `
+      <div class="form-group"><label>ID Documento</label><input type="text" id="f_IDDocumento" value="${item.IDDocumento || item.Documento || ''}"></div>
+      <div class="form-group"><label>Nombres</label><input type="text" id="f_Nombres" value="${item.Nombres || ''}"></div>
+      <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="f_FechaNacimiento" value="${item.FechaNacimiento || ''}"></div>
+      <div class="form-group"><label>Categoría</label><input type="text" id="f_Categoria" value="${item.Categoria || ''}"></div>
+      <div class="form-group"><label>Nivel</label><input type="text" id="f_Nivel" value="${item.Nivel || ''}"></div>
+      <div class="form-group"><label>Puede Asistir</label><select id="f_PuedeAsistir"><option value="SI" ${item.PuedeAsistir==='SI'?'selected':''}>SI</option><option value="NO" ${item.PuedeAsistir==='NO'?'selected':''}>NO</option></select></div>
+      <div class="form-group"><label>Consentimiento</label><select id="f_Consentimiento"><option value="SI" ${item.Consentimiento==='SI'?'selected':''}>SI</option><option value="NO" ${item.Consentimiento==='NO'?'selected':''}>NO</option></select></div>
+      <div class="form-group"><label>Estado Pago</label><select id="f_EstadoPago"><option value="PENDIENTE" ${item.EstadoPago==='PENDIENTE'?'selected':''}>PENDIENTE</option><option value="PAGADO" ${item.EstadoPago==='PAGADO'?'selected':''}>PAGADO</option></select></div>
     `;
-  });
-}
-
-function poblarFiltros() {
-  const categorias = [...new Set(gimnastasData.map(g => g.Categoria).filter(Boolean))];
-  const pagos = [...new Set(gimnastasData.map(g => g.EstadoPago).filter(Boolean))];
-
-  const catSelect = document.getElementById('filterCategoria');
-  catSelect.innerHTML = '<option value="">Todas las Categorías</option>';
-  categorias.forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
-
-  const pagoSelect = document.getElementById('filterPago');
-  pagoSelect.innerHTML = '<option value="">Todos los Estados de Pago</option>';
-  pagos.forEach(p => pagoSelect.innerHTML += `<option value="${p}">${p}</option>`);
-}
-
-function filtrarTabla() {
-  const texto = document.getElementById('searchInput').value.toLowerCase();
-  const cat = document.getElementById('filterCategoria').value;
-  const pago = document.getElementById('filterPago').value;
-
-  const filtrados = gimnastasData.filter(g => {
-    const docVal = (g.Documento || '').toString().toLowerCase();
-    const coincideTexto = (g.Nombre && g.Nombre.toLowerCase().includes(texto)) ||
-                          (g.Apellido && g.Apellido.toLowerCase().includes(texto)) ||
-                          docVal.includes(texto);
-    const coincideCat = cat === "" || g.Categoria === cat;
-    const coincidePago = pago === "" || g.EstadoPago === pago;
-
-    return coincideTexto && coincideCat && coincidePago;
-  });
-
-  renderTabla(filtrados);
-}
-
-function abrirModalEditar(g) {
-  document.getElementById('rowIndex').value = g.rowIndex;
-  document.getElementById('Documento').value = g.Documento || '';
-  document.getElementById('EstadoPago').value = g.EstadoPago || '';
-  document.getElementById('PagoID').value = g.PagoID || '';
-  document.getElementById('FechaRegistro').value = g.FechaRegistro || '';
-  document.getElementById('FechaActualizacion').value = g.FechaActualizacion || '';
-
-  document.getElementById('Nombre').value = g.Nombre || '';
-  document.getElementById('Apellido').value = g.Apellido || '';
-  document.getElementById('FechaNacimiento').value = g.FechaNacimiento || '';
-  document.getElementById('Categoria').value = g.Categoria || '';
-  document.getElementById('PuedeAsistir').value = g.PuedeAsistir || 'Sí';
-  document.getElementById('Consentimiento').value = g.Consentimiento || 'Sí';
-
-  document.getElementById('gimnastaModal').style.display = 'flex';
+  } else if (tipo === 'BaseGimnastas') {
+    fieldsHtml = `
+      <div class="form-group"><label>Documento</label><input type="text" id="f_documento" value="${item.documento || ''}"></div>
+      <div class="form-group"><label>Nombres</label><input type="text" id="f_nombres" value="${item.nombres || ''}"></div>
+      <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="f_fecha_de_nacimiento" value="${item.fecha_de_nacimiento || ''}"></div>
+      <div class="form-group"><label>Categoría</label><input type="text" id="f_categoria" value="${item.categoria || ''}"></div>
+      <div class="form-group"><label>Nivel</label><input type="text" id="f_nivel" value="${item.nivel || ''}"></div>
+    `;
+  } else if (tipo === 'Categorias') {
+    fieldsHtml = `
+      <div class="form-group"><label>Edad</label><input type="text" id="f_Edad" value="${item.Edad || ''}"></div>
+      <div class="form-group"><label>Categoría</label><input type="text" id="f_Categoria" value="${item['Categoría'] || item.Categoria || ''}"></div>
+    `;
+  } else if (tipo === 'MontosPorNivel') {
+    fieldsHtml = `
+      <div class="form-group"><label>Nivel</label><input type="text" id="f_nivel" value="${item.nivel || ''}"></div>
+      <div class="form-group"><label>Categoría</label><input type="text" id="f_categoria" value="${item.categoria || ''}"></div>
+      <div class="form-group"><label>Monto</label><input type="text" id="f_monto" value="${item.monto || ''}"></div>
+    `;
+  }
+  container.innerHTML = fieldsHtml;
 }
 
 function cerrarModal() {
-  document.getElementById('gimnastaModal').style.display = 'none';
+  document.getElementById('modalDinamico').style.display = 'none';
 }
 
-function guardarEdicionGimnasta(e) {
+function guardarModalDinamico(e) {
   e.preventDefault();
-  const payload = {
-    action: "editarGimnasta",
-    data: {
-      rowIndex: document.getElementById('rowIndex').value,
-      Nombre: document.getElementById('Nombre').value,
-      Apellido: document.getElementById('Apellido').value,
-      FechaNacimiento: document.getElementById('FechaNacimiento').value,
-      Categoria: document.getElementById('Categoria').value,
-      PuedeAsistir: document.getElementById('PuedeAsistir').value,
-      Consentimiento: document.getElementById('Consentimiento').value
-    }
-  };
+  const sheetName = document.getElementById('modalSheetName').value;
+  const rowIndex = document.getElementById('modalRowIndex').value;
+  let data = {};
 
-  fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
-    .then(res => res.json())
-    .then(() => {
-      cerrarModal();
-      cargarTodo();
-    });
+  const inputs = document.querySelectorAll('#modalFormFields input, #modalFormFields select');
+  inputs.forEach(inp => {
+    const key = inp.id.replace('f_', '');
+    data[key] = inp.value;
+  });
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "guardarFila", sheetName: sheetName, rowIndex: rowIndex, data: data })
+  }).then(() => {
+    cerrarModal();
+    cargarTodoServidor();
+  });
 }
 
 function guardarDatosTorneo(e) {
@@ -207,28 +334,35 @@ function guardarDatosTorneo(e) {
     data: {
       titulo_torneo: document.getElementById('edit_titulo_torneo').value,
       club: document.getElementById('edit_club').value,
+      titulo3: document.getElementById('edit_titulo3').value,
+      titulo4: document.getElementById('edit_titulo4').value,
       fecha_evento: document.getElementById('edit_fecha_evento').value,
       fechalimite: document.getElementById('edit_fechalimite').value,
-      Monto: document.getElementById('edit_Monto').value,
       url_formulario: document.getElementById('edit_url_formulario').value
     }
   };
 
   fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
-    .then(res => res.json())
     .then(() => {
-      alert("Información actualizada correctamente.");
-      cargarTodo();
+      alert("Información actualizada.");
+      cargarTodoServidor();
     });
 }
 
-function eliminarGimnasta(rowIndex) {
-  if(confirm('¿Confirmas que deseas borrar este registro?')) {
-    const payload = { action: "eliminarGimnasta", rowIndex: rowIndex };
-    fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
-      .then(res => res.json())
-      .then(() => {
-        cargarTodo();
-      });
+function eliminarRegistro(sheetName, rowIndex) {
+  if (confirm('¿Eliminar este registro?')) {
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "eliminarFila", sheetName: sheetName, rowIndex: rowIndex })
+    }).then(() => cargarTodoServidor());
   }
+}
+
+function copiarUrlFormulario() {
+  navigator.clipboard.writeText(urlFormularioActual).then(() => alert("¡URL copiada!"));
+}
+
+function actualizarAppManual() {
+  localStorage.clear();
+  window.location.reload(true);
 }

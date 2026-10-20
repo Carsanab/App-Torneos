@@ -14,13 +14,33 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background-color: var(--bg-principal); color: var(--texto-blanco); display: flex; min-height: 100vh; overflow-x: hidden; }
 
+/* BARRA MÓVIL Y MENÚ HAMBURGUESA */
+.mobile-header {
+  display: none;
+  background-color: var(--bg-sidebar);
+  border-bottom: 1px solid var(--borde-color);
+  padding: 12px 20px;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: var(--dorado-principal);
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
 .sidebar {
-  width: 250px;
+  width: 260px;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--borde-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: left 0.3s ease;
 }
 
 .sidebar-header {
@@ -34,17 +54,18 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
   gap: 10px;
 }
 
-.sidebar-header h2 { color: var(--dorado-principal); font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; }
+.sidebar-header h2 { color: var(--dorado-principal); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
 
-.sidebar-menu { list-style: none; padding: 20px 0; }
+.sidebar-menu { list-style: none; padding: 15px 0; }
 .sidebar-menu li {
-  padding: 15px 25px;
+  padding: 13px 20px;
   cursor: pointer;
   color: var(--texto-secundario);
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  font-size: 0.9rem;
   transition: all 0.2s;
 }
 
@@ -73,7 +94,7 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
 .header-actions {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -98,6 +119,8 @@ body { background-color: var(--bg-principal); color: var(--texto-blanco); displa
   margin-bottom: 20px;
   display: flex;
   gap: 12px;
+  justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
   border: 1px solid var(--borde-color);
 }
@@ -114,15 +137,22 @@ input, select {
 
 input:focus, select:focus { border-color: var(--dorado-principal); }
 
-input[readonly], select[disabled] {
+input[readonly] {
   background-color: #121215;
   color: #666;
   border-color: #222;
   cursor: not-allowed;
 }
 
+.select-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--rojo-principal);
+  cursor: pointer;
+}
+
 .btn {
-  padding: 10px 16px;
+  padding: 9px 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -147,7 +177,6 @@ th { background-color: #121216; color: var(--dorado-principal); padding: 14px; f
 td { padding: 12px 14px; border-bottom: 1px solid var(--borde-color); font-size: 0.9rem; }
 tr:hover { background-color: #202026; }
 
-/* ESTADOS DE PAGO */
 .status-badge {
   padding: 5px 12px;
   border-radius: 12px;
@@ -166,12 +195,7 @@ tr:hover { background-color: #202026; }
   border: 1px solid var(--rojo-principal);
 }
 
-.acciones-cell {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  align-items: center;
-}
+.acciones-cell { display: flex; flex-direction: row; gap: 8px; align-items: center; }
 
 .form-card {
   background-color: var(--bg-card);
@@ -185,7 +209,6 @@ tr:hover { background-color: #202026; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group label { font-size: 0.85rem; color: var(--dorado-principal); font-weight: 600; }
-.readonly-tag { font-size: 0.75rem; color: #777; font-style: italic; }
 
 .modal {
   display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -196,12 +219,20 @@ tr:hover { background-color: #202026; }
   padding: 25px; border: 1px solid var(--borde-color); border-top: 5px solid var(--dorado-principal); max-height: 90vh; overflow-y: auto;
 }
 
-/* RESPONSIVE MÓVIL */
 @media (max-width: 768px) {
   body { flex-direction: column; }
-  .sidebar { width: 100%; }
-  .sidebar-menu { display: flex; overflow-x: auto; padding: 0; }
-  .sidebar-menu li { flex: 1; text-align: center; justify-content: center; }
+  .mobile-header { display: flex; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    height: 100vh;
+    z-index: 2000;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-menu { display: flex; flex-direction: column; }
+  .sidebar-menu li { text-align: left; justify-content: flex-start; white-space: nowrap; }
   .header-info { flex-direction: column; align-items: stretch; gap: 15px; }
   .header-actions { width: 100%; justify-content: space-between; }
   .header-actions .btn { flex: 1; }
