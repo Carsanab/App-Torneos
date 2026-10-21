@@ -26,7 +26,6 @@ window.onload = function() {
   cargarTodoServidor();
 };
 
-// Formato de fechas DD/MM/YYYY para las tablas
 function formatearFechaDDMMYYYY(fechaStr) {
   if (!fechaStr) return '';
   const limpia = fechaStr.split('T')[0];
@@ -96,13 +95,20 @@ function cambiarVista(vista) {
   document.getElementById('menu-' + vista).classList.add('active');
 }
 
-/* RENDERIZADO DE TABLAS */
+/* RENDERIZADO DE TABLA GIMNASTAS (Muestra Importe y PagoID) */
 function renderTablaGimnastas(lista) {
   const tbody = document.getElementById('tbody-Gimnastas');
   tbody.innerHTML = lista.map(g => {
     const estado = (g.EstadoPago || 'PENDIENTE').toUpperCase();
     const badgeClass = estado === 'PAGADO' ? 'status-pagado' : 'status-pendiente';
     const fechaFormateada = formatearFechaDDMMYYYY(g.FechaNacimiento);
+    
+    // Obtener importe guardado o buscarlo automáticamente
+    let montoVal = g.Monto;
+    if (!montoVal || montoVal.toString().trim() === '') {
+      montoVal = buscarMontoEnBase(g.Nivel, g.Categoria);
+    }
+    const montoDisplay = montoVal ? `$${montoVal}` : '-';
 
     return `<tr>
       <td style="text-align: center;">
@@ -114,13 +120,26 @@ function renderTablaGimnastas(lista) {
       <td>${g.Categoria || ''}</td>
       <td>${g.Nivel || ''}</td>
       <td>${g.PuedeAsistir || ''}</td>
+      <td><strong>${montoDisplay}</strong></td>
       <td><span class="status-badge ${badgeClass}">${estado}</span></td>
+      <td><small style="color:var(--texto-secundario);">${g.PagoID || '-'}</small></td>
       <td><div class="acciones-cell">
         <button class="btn btn-gold" style="padding:4px 8px;font-size:0.8rem;" onclick='abrirModalEditar("Gimnastas", ${JSON.stringify(g)})'>Editar</button>
         <button class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick='eliminarRegistro("Gimnastas", ${g.rowIndex})'>Borrar</button>
       </div></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="9" style="text-align:center;">Sin registros.</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="text-align:center;">Sin registros.</td></tr>';
+}
+
+function buscarMontoEnBase(nivel, categoria) {
+  if (!nivel || !categoria) return "";
+  const nVal = nivel.toString().trim().toLowerCase();
+  const cVal = categoria.toString().trim().toLowerCase();
+  const reg = db.MontosPorNivel.find(m => 
+    (m.nivel || '').toString().trim().toLowerCase() === nVal && 
+    (m.categoria || '').toString().trim().toLowerCase() === cVal
+  );
+  return reg ? reg.monto : "";
 }
 
 function renderTablaBaseGimnastas(lista) {
@@ -166,6 +185,44 @@ function renderTablaMontos(lista) {
   </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Sin registros.</td></tr>';
 }
 
+/* FUNCIONALIDAD EXPORTAR A EXCEL (CSV) */
+function exportarGimnastasExcel() {
+  if (db.Gimnastas.length === 0) {
+    alert("No hay registros para exportar.");
+    return;
+  }
+
+  let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+  csvContent += "ID,Documento,Nombres,FechaNacimiento,Categoria,Nivel,PuedeAsistir,Consentimiento,EstadoPago,PagoID,Monto,FechaRegistro\n";
+
+  db.Gimnastas.forEach(g => {
+    let montoVal = g.Monto || buscarMontoEnBase(g.Nivel, g.Categoria);
+    let row = [
+      `"${g.ID || ''}"`,
+      `"${g.IDDocumento || g.Documento || ''}"`,
+      `"${g.Nombres || ''}"`,
+      `"${formatearFechaDDMMYYYY(g.FechaNacimiento)}"`,
+      `"${g.Categoria || ''}"`,
+      `"${g.Nivel || ''}"`,
+      `"${g.PuedeAsistir || ''}"`,
+      `"${g.Consentimiento || ''}"`,
+      `"${g.EstadoPago || 'PENDIENTE'}"`,
+      `"${g.PagoID || ''}"`,
+      `"${montoVal || ''}"`,
+      `"${formatearFechaDDMMYYYY(g.FechaRegistro)}"`
+    ];
+    csvContent += row.join(",") + "\n";
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Gimnastas_Torneo_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 /* SELECCIÓN Y ELIMINACIÓN MASIVA */
 function toggleSelectAll(source) {
   const checkboxes = document.querySelectorAll('.row-select-gimnasta');
@@ -209,7 +266,7 @@ function borrarTodosGimnastas() {
   }
 }
 
-/* FILTRADO DINÁMICO (BÚSQUEDA + PAGO) */
+/* FILTRADO DINÁMICO */
 function filtrarTabla(tipo) {
   if (tipo === 'Gimnastas') {
     const txt = document.getElementById('searchGimnastas').value.toLowerCase();
@@ -269,12 +326,15 @@ function generarCamposFormulario(tipo, item) {
   let fieldsHtml = '';
 
   if (tipo === 'Gimnastas') {
+    let montoInicial = item.Monto || buscarMontoEnBase(item.Nivel, item.Categoria);
     fieldsHtml = `
       <div class="form-group"><label>ID Documento</label><input type="text" id="f_IDDocumento" value="${item.IDDocumento || item.Documento || ''}"></div>
       <div class="form-group"><label>Nombres</label><input type="text" id="f_Nombres" value="${item.Nombres || ''}"></div>
       <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="f_FechaNacimiento" value="${item.FechaNacimiento || ''}"></div>
-      <div class="form-group"><label>Categoría</label><input type="text" id="f_Categoria" value="${item.Categoria || ''}"></div>
-      <div class="form-group"><label>Nivel</label><input type="text" id="f_Nivel" value="${item.Nivel || ''}"></div>
+      <div class="form-group"><label>Categoría</label><input type="text" id="f_Categoria" value="${item.Categoria || ''}" onchange="autocompletarMontoGimnasta()"></div>
+      <div class="form-group"><label>Nivel</label><input type="text" id="f_Nivel" value="${item.Nivel || ''}" onchange="autocompletarMontoGimnasta()"></div>
+      <div class="form-group"><label>Importe ($)</label><input type="text" id="f_Monto" value="${montoInicial}"></div>
+      <div class="form-group"><label>PagoID</label><input type="text" id="f_PagoID" value="${item.PagoID || ''}"></div>
       <div class="form-group"><label>Puede Asistir</label><select id="f_PuedeAsistir"><option value="SI" ${item.PuedeAsistir==='SI'?'selected':''}>SI</option><option value="NO" ${item.PuedeAsistir==='NO'?'selected':''}>NO</option></select></div>
       <div class="form-group"><label>Consentimiento</label><select id="f_Consentimiento"><option value="SI" ${item.Consentimiento==='SI'?'selected':''}>SI</option><option value="NO" ${item.Consentimiento==='NO'?'selected':''}>NO</option></select></div>
       <div class="form-group"><label>Estado Pago</label><select id="f_EstadoPago"><option value="PENDIENTE" ${item.EstadoPago==='PENDIENTE'?'selected':''}>PENDIENTE</option><option value="PAGADO" ${item.EstadoPago==='PAGADO'?'selected':''}>PAGADO</option></select></div>
@@ -300,6 +360,19 @@ function generarCamposFormulario(tipo, item) {
     `;
   }
   container.innerHTML = fieldsHtml;
+}
+
+function autocompletarMontoGimnasta() {
+  const nivelInput = document.getElementById('f_Nivel');
+  const catInput = document.getElementById('f_Categoria');
+  const montoInput = document.getElementById('f_Monto');
+
+  if (!nivelInput || !catInput || !montoInput) return;
+
+  const monto = buscarMontoEnBase(nivelInput.value, catInput.value);
+  if (monto) {
+    montoInput.value = monto;
+  }
 }
 
 function cerrarModal() {

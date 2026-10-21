@@ -7,7 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <meta name="theme-color" content="#d7352e">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -57,7 +57,6 @@
       <div class="controls-panel">
         <input type="text" id="searchGimnastas" placeholder="Buscar por Nombre o Documento..." onkeyup="filtrarTabla('Gimnastas')" style="flex: 1; min-width: 180px;">
         
-        <!-- FILTRO DE ESTADO DE PAGO -->
         <select id="filterPagoGimnastas" onchange="filtrarTabla('Gimnastas')">
           <option value="">Todos los Estados de Pago</option>
           <option value="PAGADO">Pagado</option>
@@ -66,6 +65,7 @@
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="btn btn-gold" onclick="abrirModalNuevo('Gimnastas')">+ Nuevo Registro</button>
+          <button class="btn btn-outline" onclick="exportarGimnastasExcel()">📥 Exportar Excel</button>
           <button class="btn btn-danger" onclick="borrarGimnastasSeleccionados()">🗑️ Borrar Seleccionados</button>
           <button class="btn btn-danger" style="background:#5a0000;" onclick="borrarTodosGimnastas()">⚠️ Borrar TODO</button>
         </div>
@@ -84,11 +84,13 @@
               <th>Categoría</th>
               <th>Nivel</th>
               <th>Asistencia</th>
+              <th>Importe</th>
               <th>Estado Pago</th>
+              <th>PagoID</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="tbody-Gimnastas"><tr><td colspan="9" style="text-align:center;">Cargando...</td></tr></tbody>
+          <tbody id="tbody-Gimnastas"><tr><td colspan="11" style="text-align:center;">Cargando...</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -177,7 +179,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=7"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
